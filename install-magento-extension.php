@@ -1,15 +1,17 @@
 <?php
+
 /**
  * Created by PhpStorm.
  * User: Oli
  * Date: 04/07/2018
  * Time: 12:12
  */
-
-
 Class Extension
 {
 
+    /**
+     *
+     */
     const TEMP_DIRECTORY = 'TEMP-DIR-FOLDER';
     /**
      * @var
@@ -116,16 +118,19 @@ Class Extension
     }
 
 
-
-    public function run($argv) {
+    /**
+     * @param $argv
+     */
+    public function run($argv)
+    {
 
         $checkParam = $this->checkParameter($argv);
-        if($checkParam['status'] === 'failed') {
+        if ($checkParam['status'] === 'failed') {
             die($checkParam['message']);
         }
         $this->setParameters($argv, $checkParam);
 
-        if($this->getAction() !== 'nozip') {
+        if ($this->getAction() !== 'nozip') {
             $this->unzipFile();
         } else {
             $this->copyToTempLocation();
@@ -138,16 +143,21 @@ Class Extension
 
     }
 
-    public function setParameters($argv, $paramInfo) {
+    /**
+     * @param $argv
+     * @param $paramInfo
+     */
+    private function setParameters($argv, $paramInfo)
+    {
 
         // has parameter but missing destination
-        if($argv[2] === '--' . $paramInfo['action']) {
+        if ($argv[2] === '--' . $paramInfo['action']) {
             $dst = __DIR__;
         } else {
-            $dst = (isset($argv[2]) ? $argv[2] :  __DIR__);
+            $dst = (isset($argv[2]) ? $argv[2] : __DIR__);
         }
 
-        if($paramInfo['action'] !== '') {
+        if ($paramInfo['action'] !== '') {
             $this->setAction($paramInfo['action']);
         } else {
             $this->setAction('');
@@ -159,7 +169,12 @@ Class Extension
 
     }
 
-    public function checkParameter($params) {
+    /**
+     * @param $params
+     * @return array
+     */
+    private function checkParameter($params)
+    {
         $response = array(
             'status' => 'success',
             'message' => '',
@@ -167,21 +182,21 @@ Class Extension
         );
         $actions = array('--nozip', '--straight', '--help');
         $requestedAction = '';
-        foreach ($params as $param)  {
-            if(in_array(trim($param), $actions)) {
+        foreach ($params as $param) {
+            if (in_array(trim($param), $actions)) {
                 $requestedAction = trim(str_replace('--', '', $param));
-                if(trim($param) === '--help') {
+                if (trim($param) === '--help') {
                     $response['status'] = 'failed';
                     $response['message'] = $this->help();
                     return $response;
                 }
             }
         }
-        if($requestedAction !== '') {
+        if ($requestedAction !== '') {
             $response['action'] = $requestedAction;
         }
 
-        if(!isset($params[1])) {
+        if (!isset($params[1])) {
             $response['status'] = 'failed';
             $response['message'] = "ERROR --- Source not set.\n";
         }
@@ -193,17 +208,18 @@ Class Extension
     /**
      * @return bool
      */
-    public function unzipFile() {
+    private function unzipFile()
+    {
 
         $zip = new ZipArchive;
         if ($zip->open($this->getFile()) === TRUE) {
 
 
-            if(is_dir($this->getTempDirectory())) {
+            if (is_dir($this->getTempDirectory())) {
                 die("ERROR --- The temporary directory (" . $this->getTempDirectory() . ") already exists. Remove this folder and run again.\n");
             }
 
-            if($this->getAction() === 'straight') {
+            if ($this->getAction() === 'straight') {
                 $fileInfo = pathinfo($this->getFile());
                 $filename = $fileInfo['filename'];
                 mkdir($this->getTempDirectory() . DIRECTORY_SEPARATOR . $filename, 0777, true);
@@ -225,8 +241,12 @@ Class Extension
         }
     }
 
-    public function copyToTempLocation() {
-        if(is_dir($this->getTempDirectory())) {
+    /**
+     *
+     */
+    private function copyToTempLocation()
+    {
+        if (is_dir($this->getTempDirectory())) {
             die("ERROR --- The temporary directory (" . $this->getTempDirectory() . ") already exists. Remove this folder and run again.\n");
         }
         $filename = basename($this->getFile());
@@ -235,9 +255,14 @@ Class Extension
     }
 
 
-    public function moveFiles($src, $dest = false) {
+    /**
+     * @param $src
+     * @param bool $dest
+     */
+    private function moveFiles($src, $dest = false)
+    {
 
-        if(!$dest) {
+        if (!$dest) {
             $dest = $this->getDestination();
         }
 
@@ -246,8 +271,8 @@ Class Extension
 
         foreach (scandir($src) as $file) {
 
-            $srcfile = rtrim($src, '/') .'/'. $file;
-            $destfile = rtrim($dest, '/') .'/'. $file;
+            $srcfile = rtrim($src, '/') . '/' . $file;
+            $destfile = rtrim($dest, '/') . '/' . $file;
 
             if (!in_array($file, $stringsToIgnore)) {
                 if (is_dir($srcfile)) {
@@ -266,14 +291,16 @@ Class Extension
             }
 
 
-
         }
 
     }
 
 
-
-    private function removeTempDirectory($dir) {
+    /**
+     * @param $dir
+     */
+    private function removeTempDirectory($dir)
+    {
 
         if (is_dir($dir)) {
             $objects = scandir($dir);
@@ -293,27 +320,32 @@ Class Extension
     }
 
 
-    public function help() {
+    /**
+     * @return string
+     */
+    private function help()
+    {
         $result = "\n\n"
-                . "These are the parameters available for use:"
-                . "\n\n"
-                . "1st - The extension you want to add"
-                . "\n"
-                . "2nd - The destination of your Magento root. If none is selected, / will be used"
-                . "\n\n"
-                . "You can also use these built in actions anywhere in CLI (you cannot use multiple actions):"
-                . "\n"
-                . "     --help          Shows this help page"
-                . "\n"
-                . "     --nozip         Use this if the extension is a folder, not a zipped file"
-                . "\n"
-                . "     --straight      Use this if your folder / zip file is not in a contained folder. "
-                . "\n"
-                . "                     E.g. when unzipping the file, does it have a folder housing the files, or are all the files housed."
-                . "\n\n\n";
+            . "These are the parameters available for use:"
+            . "\n\n"
+            . "1st - The extension you want to add"
+            . "\n"
+            . "2nd - The destination of your Magento root. If none is selected, / will be used"
+            . "\n\n"
+            . "You can also use these built in actions anywhere in CLI (you cannot use multiple actions):"
+            . "\n"
+            . "     --help          Shows this help page"
+            . "\n"
+            . "     --nozip         Use this if the extension is a folder, not a zipped file"
+            . "\n"
+            . "     --straight      Use this if your folder / zip file is not in a contained folder. "
+            . "\n"
+            . "                     E.g. when unzipping the file, does it have a folder housing the files, or are all the files housed."
+            . "\n\n\n";
         return $result;
     }
 
 }
+
 $extension = new Extension();
 $extension->run($argv);
